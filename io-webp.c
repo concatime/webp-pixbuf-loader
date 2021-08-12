@@ -10,13 +10,13 @@
  *          Přemysl Janouch <p.janouch@gmail.com>
  */
 
-#include <webp/decode.h>
-#include <webp/encode.h>
+#define GDK_PIXBUF_ENABLE_BACKEND
+
 #include <string.h>
 
-#define GDK_PIXBUF_ENABLE_BACKEND
 #include <gdk-pixbuf/gdk-pixbuf.h>
-#undef  GDK_PIXBUF_ENABLE_BACKEND
+#include <webp/decode.h>
+#include <webp/encode.h>
 
 /* Progressive loader context */
 typedef struct {
@@ -416,8 +416,13 @@ gdk_pixbuf__webp_image_save_to_callback (GdkPixbufSaveFunc   save_func,
                                TRUE, NULL, context);
 }
 
-void
-fill_vtable (GdkPixbufModule *module)
+#if defined(INCLUDE_webp)
+#define MODULE_ENTRY(fn) void _gdk_pixbuf__webp_ ## fn
+#else
+#define MODULE_ENTRY(fn) G_MODULE_EXPORT void fn
+#endif
+
+MODULE_ENTRY (fill_vtable) (GdkPixbufModule *module)
 {
         module->load = gdk_pixbuf__webp_image_load;
         module->begin_load = gdk_pixbuf__webp_image_begin_load;
@@ -427,8 +432,7 @@ fill_vtable (GdkPixbufModule *module)
         module->save_to_callback = gdk_pixbuf__webp_image_save_to_callback;
 }
 
-void
-fill_info (GdkPixbufFormat *info)
+MODULE_ENTRY (fill_info) (GdkPixbufFormat *info)
 {
         static GdkPixbufModulePattern signature[] = {
                 { "RIFFsizeWEBP", "    xxxx    ", 100 },
